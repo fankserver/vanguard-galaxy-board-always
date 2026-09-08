@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
     <AssemblyName>VGBBoardAlways</AssemblyName>
-    <Product>Vanguard Galaxy Board Always</Product>
+    <Product>Board Always</Product>
     <Version>0.1.0</Version>
     <LangVersion>latest</LangVersion>
     <Nullable>enable</Nullable>
