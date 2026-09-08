@@ -11,7 +11,7 @@ namespace VGBBoardAlways;
 public class Plugin : BaseUnityPlugin
 {
     public const string PluginGuid = "vg.boardalways";
-    public const string PluginName = "Vanguard Galaxy Board Always";
+    public const string PluginName = "Board Always";
     public const string PluginVersion = "0.2.0";
 
     internal static Plugin Instance { get; private set; } = null!;
