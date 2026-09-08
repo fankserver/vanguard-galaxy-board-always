@@ -1,4 +1,4 @@
-# Vanguard Galaxy Board Always (VGBoardAlways)
+# Board Always (VGBoardAlways)
 
 A BepInEx plugin for [Vanguard Galaxy](https://store.steampowered.com/app/3471800/) that removes the RNG gate from ship boarding and adds configurable difficulty controls for dungeon encounters.
 
@@ -20,7 +20,7 @@ A BepInEx plugin for [Vanguard Galaxy](https://store.steampowered.com/app/347180
    ```
 5. **Launch the game.** Open the BepInEx console — you should see a load line ending with:
    ```
-   [Info :Vanguard Galaxy Board Always] Vanguard Galaxy Board Always v0.2.0 loaded (N patches)
+   [Info :Board Always] Board Always v0.2.0 loaded (N patches)
    ```
 
 ## Configuration
