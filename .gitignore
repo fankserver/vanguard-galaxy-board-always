@@ -3,3 +3,4 @@ bin/
 *.pdb
 # Local build outputs and reference assemblies are never committed.
 *.dll
+dist/

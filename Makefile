@@ -10,7 +10,10 @@ PLUGIN_DIR := $(GAME_DIR)/BepInEx/plugins
 
 DOTNET   ?= $(shell command -v dotnet 2>/dev/null || echo /tmp/dnsdk/dotnet/dotnet)
 
-.PHONY: all build link-asm clean deploy check-bepinex
+METADATA := vg.boardalways.vgmod.json
+PLUGIN_FOLDER := $(PLUGIN_DIR)/VGBBoardAlways
+
+.PHONY: all build link-api clean deploy package check-bepinex
 
 all: build
 
@@ -22,25 +25,28 @@ check-bepinex:
 	}
 
 API_DIR ?= ../vanguard-galaxy-api
-link-asm:
+API_ABSTRACTIONS ?= $(API_DIR)/VGModAPI.Abstractions/bin/Release/$(TFM)/VGModAPI.Abstractions.dll
+link-api:
 	@mkdir -p VGBBoardAlways/lib
-	@test -f "$(API_DIR)/VGModAPI.Abstractions/bin/Release/$(TFM)/VGModAPI.Abstractions.dll" || { echo 'Build Mod API Release first.'; exit 1; }
-	ln -sfn "$(GAME_DIR)/VanguardGalaxy_Data/Managed/UnityEngine.dll" VGBBoardAlways/lib/UnityEngine.dll
-	ln -sfn "$(GAME_DIR)/VanguardGalaxy_Data/Managed/UnityEngine.CoreModule.dll" VGBBoardAlways/lib/UnityEngine.CoreModule.dll
-	ln -sfn "$(abspath $(API_DIR))/VGModAPI.Abstractions/bin/Release/$(TFM)/VGModAPI.Abstractions.dll" VGBBoardAlways/lib/VGModAPI.Abstractions.dll
+	@test -f "$(API_ABSTRACTIONS)" || { echo 'Build Mod API 0.2.7+ abstractions or set API_ABSTRACTIONS to its DLL.'; exit 1; }
+	ln -sfn "$(abspath $(API_ABSTRACTIONS))" VGBBoardAlways/lib/VGModAPI.Abstractions.dll
 
-build: link-asm
+build: link-api
 	DOTNET_ROOT=$(dir $(DOTNET)) $(DOTNET) build VGBBoardAlways/VGBBoardAlways.csproj -c $(CONFIG)
 
 .PHONY: test
 test: build
 	$(DOTNET) test VGBBoardAlways.Tests/VGBBoardAlways.Tests.csproj -c $(CONFIG)
 
+package: build
+	cd tools && python3 -m unittest test_package
+	python3 tools/package.py --configuration $(CONFIG)
+
 deploy: build check-bepinex
-	@mkdir -p "$(PLUGIN_DIR)"
-	cp "$(BUILDDLL)" "$(PLUGIN_DIR)/"
-	@if [ -f "$(BUILDDIR)/VGBBoardAlways.pdb" ]; then cp "$(BUILDDIR)/VGBBoardAlways.pdb" "$(PLUGIN_DIR)/"; fi
-	@echo "Deployed $(DLL) to $(PLUGIN_DIR)"
+	@test ! -f "$(PLUGIN_DIR)/$(DLL)" || { echo 'Remove the old standalone $(DLL) from $(PLUGIN_DIR) before folder deployment.'; exit 1; }
+	@mkdir -p "$(PLUGIN_FOLDER)"
+	cp "$(BUILDDLL)" "$(METADATA)" README.md LICENSE "$(PLUGIN_FOLDER)/"
+	@echo "Deployed $(DLL) and $(METADATA) to $(PLUGIN_FOLDER)"
 
 clean:
 	$(DOTNET) clean VGBBoardAlways.sln
