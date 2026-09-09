@@ -1,19 +1,49 @@
-name: Release packaging gate
+name: Package release
 
-# Public packaging requires an approved source for redistributable API and
-# Unity compile references. Local game references must never reach public CI.
-# This workflow deliberately publishes nothing until that prerequisite is met.
+# Compile references are redistributable: BepInEx and UnityEngine.Modules come from
+# NuGet and the API contract from its public repository. Local game references are
+# never uploaded or required here.
 on:
+  release:
+    types: [published]
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag to package"
+        required: true
+        type: string
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  reference-source-required:
+  package:
+    if: github.event_name != 'release' || !contains(github.event.release.assets.*.name, 'update.json')
     runs-on: ubuntu-latest
+    env:
+      TAG: ${{ github.event.release.tag_name || inputs.tag }}
     steps:
-      - name: Report packaging prerequisite
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ env.TAG }}
+      - uses: actions/setup-dotnet@v6
+        with:
+          dotnet-version: '10.0.x'
+      - name: Checkout public API contracts
+        uses: actions/checkout@v7
+        with:
+          repository: fankserver/vanguard-galaxy-api
+          ref: c74893332ea2370f84d0b1b0c719039f48401e89
+          path: .api
+      - name: Build and test
         run: |
-          echo '::error::Release packaging is unavailable: approved redistributable compile-reference sourcing is required. Use the documented local build for validation; do not upload game references.'
-          exit 1
+          dotnet build .api/VGModAPI.Abstractions/VGModAPI.Abstractions.csproj -c Release --nologo
+          make test CONFIG=Release API_ABSTRACTIONS="$PWD/.api/VGModAPI.Abstractions/bin/Release/netstandard2.1/VGModAPI.Abstractions.dll"
+      - name: Package and validate metadata
+        run: python3 tools/package.py --tag "$TAG"
+      - name: Upload immutable assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "$TAG" dist/*.zip
+          gh release upload "$TAG" dist/update.json

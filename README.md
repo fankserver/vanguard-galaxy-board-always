@@ -25,13 +25,17 @@ make build CONFIG=Release
 make test CONFIG=Release
 ```
 
-Public release packaging is gated until approved redistributable API/Unity compile-reference sourcing is configured. The manual packaging workflow fails explicitly rather than using local game references or publishing an incomplete package.
+`make package CONFIG=Release` writes `dist/VGBBoardAlways-v<version>.zip` and the matching `dist/update.json` feed. Packaging validates that the project version, `PluginVersion` and release tag agree and that the metadata sidecar stays within the Mod API's documented field limits. Publication uploads those exact assets to the tagged release.
 
-Override `API_DIR` for a different API checkout. `make` links ignored compile references. Boarding policy references only `VGModAPI.Abstractions`; minimal Unity references exist solely to compile BepInEx's `BaseUnityPlugin`. No Assembly-CSharp reference, Harmony patches or reflection wrappers remain.
+Override `API_DIR` or `API_ABSTRACTIONS` for a different API checkout. Compile references are redistributable: BepInEx and `UnityEngine.Modules` come from NuGet, Unity solely to compile BepInEx's `BaseUnityPlugin`, and the contract from `VGModAPI.Abstractions`. No Assembly-CSharp reference, Harmony patches or reflection wrappers remain.
 
-Install the separately supplied Mod API first, then copy **only** `VGBBoardAlways/bin/Release/netstandard2.1/VGBBoardAlways.dll` into `BepInEx/plugins/`. Do not copy local reference DLLs, test output or another copy of the abstractions assembly. Restart after changing Mod API integration configuration. Uninstall by removing `VGBBoardAlways.dll`; retaining the config file is safe.
+Install the separately supplied Mod API first, then copy the `VGBBoardAlways` folder from the release archive into `BepInEx/plugins/`, or run `make deploy CONFIG=Release`. The folder holds the plugin DLL beside `vg.boardalways.vgmod.json`, so the Mod API's Mods menu shows this mod's author, description, project link and update status. Remove any older standalone `BepInEx/plugins/VGBBoardAlways.dll` first; deployment refuses to run while it exists. Do not copy local reference DLLs, test output or another copy of the abstractions assembly. Uninstall by removing the folder; retaining the config file is safe.
 
-Host policy tests verify Enabled, scope, multiplier bounds, registration cleanup and single consumer integrity contribution. They are not Unity qualification of native eligibility, both scuttle paths, simultaneous consumers or save/load. Those gates require controlled testing of the exact consumer/API build. No release publication or game deployment is implied by a source build.
+## Mod metadata
+
+`vg.boardalways.vgmod.json` is optional author metadata read by the Mod API from beside the loaded DLL. It carries author, description, project URL and the stable update feed. It deliberately declares no version: installed version is authoritative loader data, and the published feed version comes from the release, not this file.
+
+Host policy tests verify Enabled, scope, multiplier bounds, registration cleanup, single consumer integrity contribution, and that the metadata sidecar matches the compiled loader GUID within documented limits. They are not Unity qualification of native eligibility, both scuttle paths, simultaneous consumers or save/load. Those gates require controlled testing of the exact consumer/API build. No release publication or game deployment is implied by a source build.
 
 ## License
 
