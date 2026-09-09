@@ -11,9 +11,18 @@ REPOSITORY = "https://github.com/fankserver/vanguard-galaxy-board-always"
 PLUGIN_ID = "vg.boardalways"
 
 
-def assembly_versions(data):
-    """Four-part assembly/file versions actually compiled into the assembly."""
-    return {match.decode("ascii") for match in re.findall(rb"\d+\.\d+\.\d+\.\d+", data)}
+def resource_version(data, key):
+    """Read one value from the assembly's own Win32 version resource.
+
+    Type and assembly *reference* strings also contain versions, so scanning raw
+    text cannot prove the packaged assembly's identity; these keyed entries can."""
+    marker = key.encode("utf-16-le")
+    start = data.find(marker)
+    assert start >= 0, "Assembly lacks a " + key + " resource entry"
+    tail = data[start + len(marker):start + len(marker) + 128]
+    values = re.findall(rb"(?:[ -~]\x00){3,}", tail)
+    assert values, "Unreadable " + key + " resource entry"
+    return values[0].decode("utf-16-le")
 
 
 def check_compiled_version(data, version):
@@ -21,8 +30,9 @@ def check_compiled_version(data, version):
 
     A stale or foreign DLL copied into the build output keeps a fresh timestamp, so
     only the compiled version proves the archive matches the advertised feed."""
-    assert assembly_versions(data) == {version + ".0"}, "Packaged assembly version differs from the release version"
-    assert re.search(rb"(?<![\d.])" + version.encode("ascii").replace(b".", rb"\.") + rb"(?![\d.])", data), "Packaged assembly lacks the plugin version string"
+    for key in ("Assembly Version", "FileVersion"):
+        assert resource_version(data, key) == version + ".0", "Packaged assembly version differs from the release version"
+    assert resource_version(data, "ProductVersion").startswith(version), "Packaged assembly product version differs from the release version"
 
 
 def unique_fields(pairs):
