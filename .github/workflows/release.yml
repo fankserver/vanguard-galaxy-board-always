@@ -1,85 +1,19 @@
-name: Package release
+name: Release packaging gate
 
-# Triggers when a GitHub Release is published. Also runnable manually.
-#
-# The plugin references Assembly-CSharp.dll (the game's proprietary
-# assembly) which can't live on a public runner. The repo commits a
-# PUBLICIZED stub (method signatures only, no IL) at
-# VGBBoardAlways/lib/Assembly-CSharp.dll. CI compiles against the stub;
-# the real runtime assembly takes over in-game via Mono's late binding.
-
+# Public packaging requires an approved source for redistributable API and
+# Unity compile references. Local game references must never reach public CI.
+# This workflow deliberately publishes nothing until that prerequisite is met.
 on:
-  release:
-    types: [published]
   workflow_dispatch:
-    inputs:
-      tag:
-        description: "Release tag to (re)package"
-        required: true
-        type: string
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  package:
+  reference-source-required:
     runs-on: ubuntu-latest
-    env:
-      TAG: ${{ github.event.release.tag_name || inputs.tag }}
-
     steps:
-      - name: Checkout repo at release tag
-        uses: actions/checkout@v7
-        with:
-          ref: ${{ env.TAG }}
-
-      - name: Setup .NET SDK
-        uses: actions/setup-dotnet@v5
-        with:
-          dotnet-version: '8.0.x'
-
-      - name: Verify publicized stub is committed
+      - name: Report packaging prerequisite
         run: |
-          path="VGBBoardAlways/lib/Assembly-CSharp.dll"
-          if [ ! -s "$path" ]; then
-            echo "::error::$path is missing or empty. Regenerate via 'assembly-publicizer --strip <game>/Assembly-CSharp.dll -o $path' and commit. (--strip is required.)"
-            exit 1
-          fi
-          echo "Publicized reference present: $path ($(du -h "$path" | cut -f1))"
-
-      - name: Build VGBBoardAlways.dll
-        run: dotnet build VGBBoardAlways/VGBBoardAlways.csproj -c Debug --nologo
-
-      - name: Stage release layout
-        id: stage
-        run: |
-          VERSION=$(grep 'PluginVersion =' VGBBoardAlways/Plugin.cs | head -1 | sed 's/.*"\(.*\)".*/\1/')
-          PKG_NAME="VGBoardAlways-v${VERSION}"
-          # Nested VGBoardAlways/ is intentional: it's the folder the user drops
-          # into BepInEx/plugins/.
-          PKG_DIR="dist/${PKG_NAME}/VGBoardAlways"
-
-          rm -rf "dist/${PKG_NAME}"
-          mkdir -p "$PKG_DIR"
-
-          cp VGBBoardAlways/bin/Debug/netstandard2.1/VGBBoardAlways.dll "$PKG_DIR/"
-          cp README.md "$PKG_DIR/"
-          [ -f LICENSE ] && cp LICENSE "$PKG_DIR/" || true
-
-          SIZE=$(du -sh "$PKG_DIR" | cut -f1)
-          echo "Staged DLL + README — $SIZE at $PKG_DIR"
-
-          echo "pkg_name=${PKG_NAME}" >> "$GITHUB_OUTPUT"
-
-      - name: Zip release bundle
-        run: |
-          (cd "dist/${{ steps.stage.outputs.pkg_name }}" && \
-             zip -qr "../${{ steps.stage.outputs.pkg_name }}.zip" VGBoardAlways)
-          ls -lh "dist/${{ steps.stage.outputs.pkg_name }}.zip"
-
-      - name: Upload zip to release
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          gh release upload "$TAG" "dist/${{ steps.stage.outputs.pkg_name }}.zip" --clobber
-          echo "Uploaded ${{ steps.stage.outputs.pkg_name }}.zip to release $TAG"
+          echo '::error::Release packaging is unavailable: approved redistributable compile-reference sourcing is required. Use the documented local build for validation; do not upload game references.'
+          exit 1

@@ -43,5 +43,5 @@ deploy: build check-bepinex
 	@echo "Deployed $(DLL) to $(PLUGIN_DIR)"
 
 clean:
-	$(DOTNET) clean VGBBoardAlways/VGBBoardAlways.csproj
-	rm -rf VGBBoardAlways/bin VGBBoardAlways/obj
+	$(DOTNET) clean VGBBoardAlways.sln
+	rm -rf VGBBoardAlways/bin VGBBoardAlways/obj VGBBoardAlways.Tests/bin VGBBoardAlways.Tests/obj

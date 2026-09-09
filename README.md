@@ -25,6 +25,8 @@ make build CONFIG=Release
 make test CONFIG=Release
 ```
 
+Public release packaging is gated until approved redistributable API/Unity compile-reference sourcing is configured. The manual packaging workflow fails explicitly rather than using local game references or publishing an incomplete package.
+
 Override `API_DIR` for a different API checkout. `make` links ignored compile references. Boarding policy references only `VGModAPI.Abstractions`; minimal Unity references exist solely to compile BepInEx's `BaseUnityPlugin`. No Assembly-CSharp reference, Harmony patches or reflection wrappers remain.
 
 Install the separately supplied Mod API first, then copy **only** `VGBBoardAlways/bin/Release/netstandard2.1/VGBBoardAlways.dll` into `BepInEx/plugins/`. Do not copy local reference DLLs, test output or another copy of the abstractions assembly. Restart after changing Mod API integration configuration. Uninstall by removing `VGBBoardAlways.dll`; retaining the config file is safe.
