@@ -7,7 +7,7 @@ namespace VGBBoardAlways;
 internal sealed class BoardingPolicy : IDisposable
 {
     private readonly IBoardingRuleProvider _provider;
-    internal BoardingPolicy(IBoardingRules rules, string pluginId, Func<bool> enabled,
+    internal BoardingPolicy(IBoardingRuleService rules, string pluginId, Func<bool> enabled,
         Func<float> difficulty, Func<float> integrity)
     {
         _provider = rules.AcquireProvider(pluginId);

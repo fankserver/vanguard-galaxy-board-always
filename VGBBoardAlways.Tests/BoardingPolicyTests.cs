@@ -4,9 +4,11 @@ using Xunit;
 namespace VGBBoardAlways;
 public sealed class BoardingPolicyTests
 {
-    private sealed class Rules : IBoardingRules, IBoardingRuleProvider
+    private sealed class Rules : IBoardingRuleService, IBoardingRuleProvider
     {
         public bool IsEvaluating => false;
+        public ServiceAvailability Availability { get; set; } = ServiceAvailability.Available;
+        public event Action<ServiceAvailability>? AvailabilityChanged { add { } remove { } }
         internal Func<BoardingDisableContext, BoardingDisableDecision> Disable = null!;
         internal Func<BoardingEncounterContext, BoardingEncounterTuning> Tuning = null!;
         internal Func<BoardingIntegrityContext, float> Integrity = null!;
@@ -38,6 +40,17 @@ public sealed class BoardingPolicyTests
             Assert.Equal(BoardingDisableDecision.Vanilla, rules.Disable(new(session, 39, 100, 0)));
             Assert.Equal(1, rules.Tuning(encounter).DefenderPowerMultiplier);
             Assert.Equal(1, rules.Integrity(new(encounter, BoardingDamageCause.Scuttle, 10, 100)));
+        }
+        Assert.True(rules.Disposed);
+    }
+    [Fact]
+    public void UnavailableHealthDoesNotDiscardSessionIndependentPolicies()
+    {
+        var rules = new Rules { Availability = new ServiceAvailability(ServiceUnavailableReason.Disabled) };
+        using (var policy = new BoardingPolicy(rules, "test", () => true, () => 1, () => 1))
+        {
+            Assert.NotNull(rules.Disable); Assert.NotNull(rules.Tuning); Assert.NotNull(rules.Integrity);
+            Assert.False(rules.Disposed);
         }
         Assert.True(rules.Disposed);
     }
