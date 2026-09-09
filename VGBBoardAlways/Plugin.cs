@@ -6,12 +6,12 @@ namespace VGBBoardAlways;
 
 [BepInPlugin(PluginGuid, PluginName, PluginVersion)]
 [BepInProcess("VanguardGalaxy.exe")]
-[BepInDependency(ModApi.PluginId, "0.2.0")]
+[BepInDependency(ModApi.PluginId, "0.2.7")]
 public class Plugin : BaseUnityPlugin
 {
     public const string PluginGuid = "vg.boardalways";
     public const string PluginName = "Board Always";
-    public const string PluginVersion = "0.4.0";
+    public const string PluginVersion = "0.4.1";
     private BoardingPolicy? _policy;
 
     private void Awake()
