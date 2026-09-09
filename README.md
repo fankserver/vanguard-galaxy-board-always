@@ -1,6 +1,6 @@
 # Board Always
 
-A BepInEx 5 plugin using Mod API's public boarding rules. Requires Mod API **0.1.42 or newer**, its experimental `[Boarding] Enabled = true` setting, and an inspected game build. Unavailable integration logs a warning; there is no native patch fallback.
+A BepInEx 5 plugin using Mod API's public boarding rules. Requires Mod API **0.2.0 or newer**, its experimental `[Boarding] Enabled = true` setting, and an inspected game build. Uses `ModApi.Services.BoardingRules` / `IBoardingRuleService`. Policies register independently of current health; the API gates their evaluation while unavailable. Unavailable integration logs a warning; there is no native patch fallback. Version 0.4.0 must be rebuilt against the breaking 0.2.0 API; older compiled consumers are not compatible. This source migration does not establish combined-consumer Unity acceptance.
 
 ## Policy and configuration
 
