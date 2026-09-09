@@ -40,7 +40,9 @@ jobs:
           dotnet build .api/VGModAPI.Abstractions/VGModAPI.Abstractions.csproj -c Release --nologo
           make test CONFIG=Release API_ABSTRACTIONS="$PWD/.api/VGModAPI.Abstractions/bin/Release/netstandard2.1/VGModAPI.Abstractions.dll"
       - name: Package and validate metadata
-        run: python3 tools/package.py --tag "$TAG"
+        run: |
+          (cd tools && python3 -m unittest test_package)
+          python3 tools/package.py --tag "$TAG"
       - name: Upload immutable assets
         env:
           GH_TOKEN: ${{ github.token }}

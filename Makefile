@@ -39,6 +39,7 @@ test: build
 	$(DOTNET) test VGBBoardAlways.Tests/VGBBoardAlways.Tests.csproj -c $(CONFIG)
 
 package: build
+	cd tools && python3 -m unittest test_package
 	python3 tools/package.py --configuration $(CONFIG)
 
 deploy: build check-bepinex

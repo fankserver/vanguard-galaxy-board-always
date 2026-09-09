@@ -25,7 +25,7 @@ make build CONFIG=Release
 make test CONFIG=Release
 ```
 
-`make package CONFIG=Release` writes `dist/VGBBoardAlways-v<version>.zip` and the matching `dist/update.json` feed. Packaging validates that the project version, `PluginVersion` and release tag agree and that the metadata sidecar stays within the Mod API's documented field limits. Publication uploads those exact assets to the tagged release.
+`make package CONFIG=Release` writes `dist/VGBBoardAlways-v<version>.zip` and the matching `dist/update.json` feed. Packaging validates that the project version, `PluginVersion`, the version compiled into the packaged assembly and the release tag all agree, and that the metadata sidecar stays within the Mod API's documented field limits. `python3 -m unittest test_package` in `tools/` covers that gate, including rejection of a stale or foreign DLL dropped into the build output. Publication uploads those exact assets to the tagged release.
 
 Override `API_DIR` or `API_ABSTRACTIONS` for a different API checkout. Compile references are redistributable: BepInEx and `UnityEngine.Modules` come from NuGet, Unity solely to compile BepInEx's `BaseUnityPlugin`, and the contract from `VGModAPI.Abstractions`. No Assembly-CSharp reference, Harmony patches or reflection wrappers remain.
 

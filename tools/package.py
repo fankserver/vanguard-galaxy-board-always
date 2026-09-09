@@ -11,6 +11,20 @@ REPOSITORY = "https://github.com/fankserver/vanguard-galaxy-board-always"
 PLUGIN_ID = "vg.boardalways"
 
 
+def assembly_versions(data):
+    """Four-part assembly/file versions actually compiled into the assembly."""
+    return {match.decode("ascii") for match in re.findall(rb"\d+\.\d+\.\d+\.\d+", data)}
+
+
+def check_compiled_version(data, version):
+    """The packaged assembly, not just its source, must carry the released version.
+
+    A stale or foreign DLL copied into the build output keeps a fresh timestamp, so
+    only the compiled version proves the archive matches the advertised feed."""
+    assert assembly_versions(data) == {version + ".0"}, "Packaged assembly version differs from the release version"
+    assert re.search(rb"(?<![\d.])" + version.encode("ascii").replace(b".", rb"\.") + rb"(?![\d.])", data), "Packaged assembly lacks the plugin version string"
+
+
 def unique_fields(pairs):
     result = {}
     for key, value in pairs:
@@ -39,6 +53,7 @@ def package(configuration="Release", output=ROOT / "dist", tag=None):
     assert dll.is_file(), "Build the plugin before packaging"
     assert dll.stat().st_mtime_ns >= max((ROOT / "VGBBoardAlways/Plugin.cs").stat().st_mtime_ns,
                                        (ROOT / "VGBBoardAlways/VGBBoardAlways.csproj").stat().st_mtime_ns), "Stale assembly: rebuild before packaging"
+    check_compiled_version(dll.read_bytes(), version)
     output.mkdir(parents=True, exist_ok=True)
     archive = output / f"VGBBoardAlways-v{version}.zip"
     with zipfile.ZipFile(archive, "w", zipfile.ZIP_DEFLATED) as bundle:
