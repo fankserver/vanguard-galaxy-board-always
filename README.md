@@ -1,56 +1,37 @@
-# Board Always (VGBoardAlways)
+# Board Always
 
-A BepInEx plugin for [Vanguard Galaxy](https://store.steampowered.com/app/3471800/) that removes the RNG gate from ship boarding and adds configurable difficulty controls for dungeon encounters.
+A BepInEx 5 plugin using Mod API's public boarding rules. Requires Mod API **0.1.42 or newer**, its experimental `[Boarding] Enabled = true` setting, and an inspected game build. Unavailable integration logs a warning; there is no native patch fallback.
 
-- **Always boardable** — enemy ships below 40% HP become boardable on every damage tick instead of relying on the vanilla RNG roll. The 15% damage accumulation gate is bypassed entirely.
-- **EMP synergy** — boarding chance scales with EMP charge on the target, making EMP weapons a strategic choice for capture-focused builds.
-- **Difficulty modifier** — scales defender combat power and HP globally. Set below 1.0 to make high-level dungeons easier, or above 1.0 for a tougher challenge.
-- **Integrity damage control** — configurable multiplier for hull integrity loss during boarding. Set to 0.0 to prevent integrity loss entirely, or a small value (e.g. 0.05) for very gradual degradation.
-- **Scuttling protection** — integrity damage from emergency scuttling is also scaled by the multiplier so your ship doesn't take unintended hull damage when boarding goes wrong.
+## Policy and configuration
 
-## Install
+Plugin identity `vg.boardalways` and `[General]` keys in `BepInEx/config/vg.boardalways.cfg` are retained. No consumer save data or migration serializer is needed.
 
-1. **Install BepInEx 5.x** — grab `BepInEx_win_x64_5.4.x.zip` from the [BepInEx releases](https://github.com/BepInEx/BepInEx/releases) and unzip it into your Vanguard Galaxy install folder (next to `VanguardGalaxy.exe`).
-2. **Launch the game once** so BepInEx creates its `BepInEx/plugins/` and `BepInEx/config/` subfolders, then close the game.
-3. **Download the VGBoardAlways release** zip from [Releases](https://github.com/fank/vanguard-galaxy-board-always/releases).
-4. **Unzip** into `BepInEx/plugins/`:
-   ```
-   VanguardGalaxy/BepInEx/plugins/
-     VGBoardAlways.dll
-   ```
-5. **Launch the game.** Open the BepInEx console — you should see a load line ending with:
-   ```
-   [Info :Board Always] Board Always v0.2.0 loaded (N patches)
-   ```
-
-## Configuration
-
-Edit `BepInEx/config/vg.boardalways.cfg` after first launch:
-
-| Setting | Default | Description |
+| Key | Default | Behavior |
 |---|---|---|
-| `Enabled` | `true` | When enabled, ships below 40% HP become boardable without RNG. |
-| `DifficultyModifier` | `1.0` | Global multiplier for dungeon enemy difficulty. Scales defender combat power and HP. `0.5` = half difficulty, `2.0` = double. |
-| `IntegrityDamageMultiplier` | `1.0` | Multiplier for hull integrity damage during boarding. `0.0` = no integrity loss, `0.05` = very slow degradation. |
+| `Enabled` | true | Gates every policy, including difficulty. Disabling removes this consumer's adjustments, not another mod's rules or already-saved creation tuning. |
+| `DifficultyModifier` | 1 | Ship defender power and initial health, from 0 to 10. Values above 1 increase difficulty. Applied once at creation and in estimates; saved encounters retain their values. |
+| `IntegrityDamageMultiplier` | 1 | Ship boarding integrity damage, from 0 to 10. Scuttle damage passes through the API accounting boundary once. Authoritative host destruction cannot be prevented. |
 
-## Uninstall
+While enabled, structurally eligible ships strictly below 40% hull receive an Allow policy at the native damage boundary. This bypasses the random/accumulated-damage gate, not structural exclusions. Other providers can conflict or deny; this is not exclusive control or a guarantee against other mods. EMP does not increase an already guaranteed policy result.
 
-Delete `BepInEx/plugins/VGBoardAlways.dll` and `BepInEx/config/vg.boardalways.cfg` (optional). No per-save state.
+Difficulty and integrity policy are **ships only**, not shared installation simulations. Enabled applies consistently to all policies. Scuttle damage is not rescaled by a second postfix. These supported semantics intentionally correct the patch-based configuration omissions and shared-installation/double-scaling behavior rather than preserving those bugs. Out-of-range finite values clamp to [0,10]; nonfinite values use 1.
 
-## Build
+## Build and install
 
-The game's `Assembly-CSharp.dll` is referenced from the game install at build time via a symlink (`make link-asm`). BepInEx, HarmonyX, and Unity engine modules come from NuGet.
+Build Mod API Release in the adjacent `vanguard-galaxy-api` directory first, then:
 
-```bash
-# Build the DLL
-make build
-
-# Build + copy into the game's BepInEx/plugins/ folder (WSL/Steam path; edit Makefile if yours differs)
-make deploy
-
-# Clean build artifacts
-make clean
+```sh
+make build CONFIG=Release
+make test CONFIG=Release
 ```
+
+Public release packaging is gated until approved redistributable API/Unity compile-reference sourcing is configured. The manual packaging workflow fails explicitly rather than using local game references or publishing an incomplete package.
+
+Override `API_DIR` for a different API checkout. `make` links ignored compile references. Boarding policy references only `VGModAPI.Abstractions`; minimal Unity references exist solely to compile BepInEx's `BaseUnityPlugin`. No Assembly-CSharp reference, Harmony patches or reflection wrappers remain.
+
+Install the separately supplied Mod API first, then copy **only** `VGBBoardAlways/bin/Release/netstandard2.1/VGBBoardAlways.dll` into `BepInEx/plugins/`. Do not copy local reference DLLs, test output or another copy of the abstractions assembly. Restart after changing Mod API integration configuration. Uninstall by removing `VGBBoardAlways.dll`; retaining the config file is safe.
+
+Host policy tests verify Enabled, scope, multiplier bounds, registration cleanup and single consumer integrity contribution. They are not Unity qualification of native eligibility, both scuttle paths, simultaneous consumers or save/load. Those gates require controlled testing of the exact consumer/API build. No release publication or game deployment is implied by a source build.
 
 ## License
 

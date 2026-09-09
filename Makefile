@@ -21,15 +21,20 @@ check-bepinex:
 		exit 1 ; \
 	}
 
+API_DIR ?= ../vanguard-galaxy-api
 link-asm:
 	@mkdir -p VGBBoardAlways/lib
-	@if [ ! -e "VGBBoardAlways/lib/Assembly-CSharp.dll" ]; then \
-		ln -sf "$(GAME_DIR)/VanguardGalaxy_Data/Managed/Assembly-CSharp.dll" VGBBoardAlways/lib/Assembly-CSharp.dll ; \
-		echo "Linked Assembly-CSharp.dll" ; \
-	fi
+	@test -f "$(API_DIR)/VGModAPI.Abstractions/bin/Release/$(TFM)/VGModAPI.Abstractions.dll" || { echo 'Build Mod API Release first.'; exit 1; }
+	ln -sfn "$(GAME_DIR)/VanguardGalaxy_Data/Managed/UnityEngine.dll" VGBBoardAlways/lib/UnityEngine.dll
+	ln -sfn "$(GAME_DIR)/VanguardGalaxy_Data/Managed/UnityEngine.CoreModule.dll" VGBBoardAlways/lib/UnityEngine.CoreModule.dll
+	ln -sfn "$(abspath $(API_DIR))/VGModAPI.Abstractions/bin/Release/$(TFM)/VGModAPI.Abstractions.dll" VGBBoardAlways/lib/VGModAPI.Abstractions.dll
 
 build: link-asm
 	DOTNET_ROOT=$(dir $(DOTNET)) $(DOTNET) build VGBBoardAlways/VGBBoardAlways.csproj -c $(CONFIG)
+
+.PHONY: test
+test: build
+	$(DOTNET) test VGBBoardAlways.Tests/VGBBoardAlways.Tests.csproj -c $(CONFIG)
 
 deploy: build check-bepinex
 	@mkdir -p "$(PLUGIN_DIR)"
@@ -38,5 +43,5 @@ deploy: build check-bepinex
 	@echo "Deployed $(DLL) to $(PLUGIN_DIR)"
 
 clean:
-	$(DOTNET) clean VGBBoardAlways/VGBBoardAlways.csproj
-	rm -rf VGBBoardAlways/bin VGBBoardAlways/obj
+	$(DOTNET) clean VGBBoardAlways.sln
+	rm -rf VGBBoardAlways/bin VGBBoardAlways/obj VGBBoardAlways.Tests/bin VGBBoardAlways.Tests/obj

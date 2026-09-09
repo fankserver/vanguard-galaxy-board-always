@@ -1,53 +1,35 @@
-using System.Linq;
 using BepInEx;
 using BepInEx.Configuration;
-using BepInEx.Logging;
-using HarmonyLib;
+using VGModAPI;
 
 namespace VGBBoardAlways;
 
 [BepInPlugin(PluginGuid, PluginName, PluginVersion)]
 [BepInProcess("VanguardGalaxy.exe")]
+[BepInDependency(ModApi.PluginId, "0.1.42")]
 public class Plugin : BaseUnityPlugin
 {
     public const string PluginGuid = "vg.boardalways";
     public const string PluginName = "Board Always";
-    public const string PluginVersion = "0.2.0";
-
-    internal static Plugin Instance { get; private set; } = null!;
-    internal static ManualLogSource Log { get; private set; } = null!;
-
-    internal ConfigEntry<bool> CfgEnabled = null!;
-    internal ConfigEntry<float> CfgDifficultyModifier = null!;
-    internal ConfigEntry<float> CfgIntegrityDamageMultiplier = null!;
-
-    private Harmony _harmony = null!;
+    public const string PluginVersion = "0.3.0";
+    private BoardingPolicy? _policy;
 
     private void Awake()
     {
-        Instance = this;
-        Log = Logger;
-
-        CfgEnabled = Config.Bind("General", "Enabled", true,
-            "When true, enemy ships below 40% HP will become boardable " +
-            "without RNG. The 15% damage accumulation gate is bypassed; " +
-            "every damage tick in the sub-40% zone triggers instant 100% boarding chance.");
-
-        CfgDifficultyModifier = Config.Bind("General", "DifficultyModifier", 1.0f,
-            "Global multiplier for dungeon enemy difficulty. Scales defender combat power and " +
-            "defender HP. Set below 1.0 to make high-level boardings easier. " +
-            "1.0 is vanilla behavior.");
-
-        CfgIntegrityDamageMultiplier = Config.Bind("General", "IntegrityDamageMultiplier", 1.0f,
-            "Multiplier for ship integrity damage during boarding. Set to 0.0 to prevent ship integrity from dropping at all, or a small value (e.g. 0.05) to make it drop very slowly. 1.0 is vanilla behavior.");
-
-        _harmony = new Harmony(PluginGuid);
-        _harmony.PatchAll(typeof(Patches.BoardingPatches));
-        Log.LogInfo($"{PluginName} v{PluginVersion} loaded ({_harmony.GetPatchedMethods().Count()} patches)");
+        var enabled = Config.Bind("General", "Enabled", true,
+            "Enable ship boarding eligibility, difficulty and integrity policies. False restores vanilla policy contributions.");
+        var difficulty = Config.Bind("General", "DifficultyModifier", 1.0f,
+            new ConfigDescription("Ship defender power and initial health multiplier, applied once at creation and in estimates. Existing saved encounters retain their tuning.", new AcceptableValueRange<float>(0, 10)));
+        var integrity = Config.Bind("General", "IntegrityDamageMultiplier", 1.0f,
+            new ConfigDescription("Ship boarding integrity damage multiplier, including scuttle damage exactly once. Cannot prevent authoritative host destruction.", new AcceptableValueRange<float>(0, 10)));
+        var rules = ModApi.BoardingRules;
+        if (rules == null)
+        {
+            Logger.LogWarning("Boarding rules unavailable. Enable Mod API's experimental Boarding integration on a supported game build; no native patch fallback is installed.");
+            return;
+        }
+        _policy = new BoardingPolicy(rules, PluginGuid, () => enabled.Value, () => difficulty.Value, () => integrity.Value);
+        Logger.LogInfo($"{PluginName} v{PluginVersion} registered public boarding policies.");
     }
-
-    private void OnDestroy()
-    {
-        _harmony?.UnpatchSelf();
-    }
+    private void OnDestroy() { _policy?.Dispose(); _policy = null; }
 }
