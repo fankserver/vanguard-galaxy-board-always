@@ -38,11 +38,29 @@ public sealed class MetadataTests
         Assert.False(metadata.TryGetProperty("version", out _));
     }
 
+    /// <summary>The published version must come from compiled metadata, not from a source file the archive never contains.</summary>
+    [Fact]
+    public void CompiledAssemblyAndLoaderVersionsMatchTheProjectVersion()
+    {
+        var declared = System.Xml.Linq.XDocument.Load(Path.Combine(Root, "VGBBoardAlways", "VGBBoardAlways.csproj"))
+            .Descendants("Version").Single().Value;
+        using var assembly = Compiled();
+        Assert.Equal(new Version(declared + ".0"), assembly.Name.Version);
+        var identity = Assert.Single(assembly.MainModule.GetType("VGBBoardAlways.Plugin").CustomAttributes
+            .Where(attribute => attribute.AttributeType.FullName == "BepInEx.BepInPlugin"));
+        Assert.Equal(declared, (string)identity.ConstructorArguments[2].Value);
+    }
+
+    private static AssemblyDefinition Compiled()
+    {
+        var configuration = Directory.GetParent(AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar))!.Name;
+        return AssemblyDefinition.ReadAssembly(Path.Combine(Root, "VGBBoardAlways", "bin", configuration, "netstandard2.1", "VGBBoardAlways.dll"));
+    }
+
     [Fact]
     public void SidecarFileNameAndIdentityMatchTheCompiledLoaderGuid()
     {
-        var configuration = Directory.GetParent(AppContext.BaseDirectory.TrimEnd(Path.DirectorySeparatorChar))!.Name;
-        using var assembly = AssemblyDefinition.ReadAssembly(Path.Combine(Root, "VGBBoardAlways", "bin", configuration, "netstandard2.1", "VGBBoardAlways.dll"));
+        using var assembly = Compiled();
         var plugin = assembly.MainModule.GetType("VGBBoardAlways.Plugin");
         var identity = Assert.Single(plugin.CustomAttributes.Where(attribute => attribute.AttributeType.FullName == "BepInEx.BepInPlugin"));
         var guid = (string)identity.ConstructorArguments[0].Value;
