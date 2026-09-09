@@ -18,7 +18,7 @@ public sealed class DependencyTests
         var dependency = Assert.Single(plugin.CustomAttributes.Where(attribute => attribute.AttributeType.FullName == "BepInEx.BepInDependency"));
         Assert.Equal(2, dependency.ConstructorArguments.Count);
         Assert.Equal(VGModAPI.ModApi.PluginId, dependency.ConstructorArguments[0].Value);
-        Assert.Equal("0.2.0", dependency.ConstructorArguments[1].Value);
+        Assert.Equal("0.2.7", dependency.ConstructorArguments[1].Value);
         Assert.Contains(assembly.MainModule.GetMemberReferences().OfType<MethodReference>(),
             reference => reference.DeclaringType.FullName == "VGModAPI.ModApi" && reference.Name == "get_Services");
         var policy = assembly.MainModule.GetType("VGBBoardAlways.BoardingPolicy");

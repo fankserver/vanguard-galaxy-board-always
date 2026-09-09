@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "pluginId": "vg.boardalways",
+  "author": "fank",
+  "description": "Board damaged ships as soon as their hull drops below 40 percent, instead of waiting for the vanilla disabled state. Scale defender power, defender health and boarding integrity damage, or turn the policies off to restore vanilla behavior.",
+  "projectUrl": "https://github.com/fankserver/vanguard-galaxy-board-always",
+  "updateUrl": "https://github.com/fankserver/vanguard-galaxy-board-always/releases/latest/download/update.json",
+  "channel": "stable"
+}
